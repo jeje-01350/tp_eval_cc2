@@ -1,8 +1,8 @@
-use std::io;
-use std::io::Write;
-use std::path::Path;
+use eframe::egui;
 use serde::{Serialize, Deserialize};
 use std::error::Error;
+use std::fs;
+use std::path::Path;
 
 // Structure de base pour un livre
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,7 +38,7 @@ impl Bibliotheque {
             return Ok(());
         }
 
-        let contenu = std::fs::read_to_string(&self.fichier)?;
+        let contenu = fs::read_to_string(&self.fichier)?;
         if contenu.is_empty() {
             return Ok(());
         }
@@ -50,7 +50,7 @@ impl Bibliotheque {
     // Sauvegarde les livres dans le fichier JSON
     fn sauvegarder_donnees(&self) -> Result<(), Box<dyn Error>> {
         let contenu = serde_json::to_string_pretty(&self.livres)?;
-        std::fs::write(&self.fichier, contenu)?;
+        fs::write(&self.fichier, contenu)?;
         Ok(())
     }
 
@@ -76,25 +76,6 @@ impl Bibliotheque {
             .find(|livre| livre.isbn.to_lowercase() == isbn.to_lowercase())
     }
 
-    // Affiche la liste des livres
-    fn afficher_tous_les_livres(&self) {
-        if self.livres.is_empty() {
-            println!("La bibliothèque est vide.");
-            return;
-        }
-
-        println!("\nListe des livres :");
-        for (index, livre) in self.livres.iter().enumerate() {
-            println!("{}. {} - {} (ISBN: {}, Année: {})",
-                index + 1,
-                livre.titre,
-                livre.auteur,
-                livre.isbn,
-                livre.annee_publication
-            );
-        }
-    }
-
     // Supprime un livre par son index
     fn retirer_livre(&mut self, index: usize) -> Result<(), Box<dyn Error>> {
         if index >= self.livres.len() {
@@ -106,153 +87,218 @@ impl Bibliotheque {
     }
 }
 
-// Point d'entrée du programme
-fn main() {
-    let mut bibliotheque = Bibliotheque::new("bibliotheque.json");
-    
-    loop {
-        println!("\n=== Menu Principal ===");
-        println!("1. Ajouter un livre");
-        println!("2. Rechercher un livre");
-        println!("3. Afficher tous les livres");
-        println!("4. Retirer un livre");
-        println!("5. Quitter");
-        print!("\nChoix : ");
-        io::stdout().flush().unwrap();
+// Application principale
+struct BibliothequeApp {
+    bibliotheque: Bibliotheque,
+    nouveau_livre: Livre,
+    recherche_titre: String,
+    recherche_isbn: String,
+    onglet_actif: Onglet,
+    message: String,
+    message_type: MessageType,
+}
 
-        let mut choix = String::new();
-        io::stdin().read_line(&mut choix).unwrap();
-        let choix: u32 = match choix.trim().parse() {
-            Ok(num) => num,
-            Err(_) => {
-                println!("Entrée invalide.");
-                continue;
-            }
-        };
+#[derive(PartialEq)]
+enum Onglet {
+    Liste,
+    Ajout,
+    Recherche,
+}
 
-        match choix {
-            1 => {
-                println!("\nNouveau livre :");
-                let livre = saisir_livre();
-                match bibliotheque.ajouter_livre(livre) {
-                    Ok(_) => println!("Livre ajouté !"),
-                    Err(e) => println!("Erreur : {}", e),
-                }
-            }
-            2 => {
-                println!("\nRecherche :");
-                println!("1. Par titre");
-                println!("2. Par ISBN");
-                print!("Choix : ");
-                io::stdout().flush().unwrap();
-                
-                let mut type_recherche = String::new();
-                io::stdin().read_line(&mut type_recherche).unwrap();
-                
-                match type_recherche.trim().parse::<u32>() {
-                    Ok(1) => {
-                        print!("Titre : ");
-                        io::stdout().flush().unwrap();
-                        let mut titre = String::new();
-                        io::stdin().read_line(&mut titre).unwrap();
-                        let resultats = bibliotheque.rechercher_par_titre(titre.trim());
-                        
-                        if resultats.is_empty() {
-                            println!("Aucun résultat.");
-                        } else {
-                            println!("\nRésultats :");
-                            for livre in resultats {
-                                println!("- {} - {} (ISBN: {}, Année: {})",
-                                    livre.titre,
-                                    livre.auteur,
-                                    livre.isbn,
-                                    livre.annee_publication
-                                );
-                            }
-                        }
-                    },
-                    Ok(2) => {
-                        print!("ISBN : ");
-                        io::stdout().flush().unwrap();
-                        let mut isbn = String::new();
-                        io::stdin().read_line(&mut isbn).unwrap();
-                        
-                        match bibliotheque.rechercher_par_isbn(isbn.trim()) {
-                            Some(livre) => {
-                                println!("\nLivre trouvé :");
-                                println!("- {} - {} (ISBN: {}, Année: {})",
-                                    livre.titre,
-                                    livre.auteur,
-                                    livre.isbn,
-                                    livre.annee_publication
-                                );
-                            },
-                            None => println!("ISBN non trouvé."),
-                        }
-                    },
-                    _ => println!("Option invalide."),
-                }
-            }
-            3 => {
-                bibliotheque.afficher_tous_les_livres();
-            }
-            4 => {
-                bibliotheque.afficher_tous_les_livres();
-                if !bibliotheque.livres.is_empty() {
-                    print!("\nNuméro du livre à retirer : ");
-                    io::stdout().flush().unwrap();
-                    let mut index = String::new();
-                    io::stdin().read_line(&mut index).unwrap();
-                    let index: usize = match index.trim().parse::<usize>() {
-                        Ok(num) => num - 1,
-                        Err(_) => {
-                            println!("Numéro invalide.");
-                            continue;
-                        }
-                    };
+#[derive(PartialEq)]
+enum MessageType {
+    Info,
+    Erreur,
+    Succes,
+}
 
-                    match bibliotheque.retirer_livre(index) {
-                        Ok(_) => println!("Livre retiré !"),
-                        Err(e) => println!("Erreur : {}", e),
-                    }
-                }
-            }
-            5 => {
-                println!("Au revoir !");
-                break;
-            }
-            _ => println!("Option invalide."),
+impl Default for BibliothequeApp {
+    fn default() -> Self {
+        Self {
+            bibliotheque: Bibliotheque::new("bibliotheque.json"),
+            nouveau_livre: Livre {
+                titre: String::new(),
+                auteur: String::new(),
+                isbn: String::new(),
+                annee_publication: 0,
+            },
+            recherche_titre: String::new(),
+            recherche_isbn: String::new(),
+            onglet_actif: Onglet::Liste,
+            message: String::new(),
+            message_type: MessageType::Info,
         }
     }
 }
 
-// Saisie des informations d'un livre
-fn saisir_livre() -> Livre {
-    print!("Titre : ");
-    io::stdout().flush().unwrap();
-    let mut titre = String::new();
-    io::stdin().read_line(&mut titre).unwrap();
+impl eframe::App for BibliothequeApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            ui.heading("Gestion de Bibliothèque");
+            ui.horizontal(|ui| {
+                if ui.button("Liste des Livres").clicked() {
+                    self.onglet_actif = Onglet::Liste;
+                }
+                if ui.button("Ajouter un Livre").clicked() {
+                    self.onglet_actif = Onglet::Ajout;
+                }
+                if ui.button("Rechercher").clicked() {
+                    self.onglet_actif = Onglet::Recherche;
+                }
+            });
+        });
 
-    print!("Auteur : ");
-    io::stdout().flush().unwrap();
-    let mut auteur = String::new();
-    io::stdin().read_line(&mut auteur).unwrap();
-
-    print!("ISBN : ");
-    io::stdout().flush().unwrap();
-    let mut isbn = String::new();
-    io::stdin().read_line(&mut isbn).unwrap();
-
-    print!("Année : ");
-    io::stdout().flush().unwrap();
-    let mut annee = String::new();
-    io::stdin().read_line(&mut annee).unwrap();
-    let annee: u32 = annee.trim().parse().unwrap_or(0);
-
-    Livre {
-        titre: titre.trim().to_string(),
-        auteur: auteur.trim().to_string(),
-        isbn: isbn.trim().to_string(),
-        annee_publication: annee,
+        egui::CentralPanel::default().show(ctx, |ui| {
+            match self.onglet_actif {
+                Onglet::Liste => {
+                    ui.heading("Liste des Livres");
+                    if self.bibliotheque.livres.is_empty() {
+                        ui.label("Aucun livre dans la bibliothèque.");
+                    } else {
+                        let mut index_a_supprimer = None;
+                        
+                        egui::ScrollArea::vertical().show(ui, |ui| {
+                            for (index, livre) in self.bibliotheque.livres.iter().enumerate() {
+                                ui.horizontal(|ui| {
+                                    ui.vertical(|ui| {
+                                        ui.heading(&livre.titre);
+                                        ui.label(format!("Auteur: {}", livre.auteur));
+                                        ui.label(format!("ISBN: {}", livre.isbn));
+                                        ui.label(format!("Année: {}", livre.annee_publication));
+                                    });
+                                    if ui.button("Supprimer").clicked() {
+                                        index_a_supprimer = Some(index);
+                                    }
+                                });
+                                ui.separator();
+                            }
+                        });
+                        
+                        if let Some(index) = index_a_supprimer {
+                            if let Err(e) = self.bibliotheque.retirer_livre(index) {
+                                self.message = format!("Erreur: {}", e);
+                                self.message_type = MessageType::Erreur;
+                            } else {
+                                self.message = "Livre supprimé avec succès.".to_string();
+                                self.message_type = MessageType::Succes;
+                            }
+                        }
+                    }
+                }
+                Onglet::Ajout => {
+                    ui.heading("Ajouter un Nouveau Livre");
+                    ui.add_space(10.0);
+                    
+                    ui.horizontal(|ui| {
+                        ui.label("Titre: ");
+                        ui.text_edit_singleline(&mut self.nouveau_livre.titre);
+                    });
+                    
+                    ui.horizontal(|ui| {
+                        ui.label("Auteur: ");
+                        ui.text_edit_singleline(&mut self.nouveau_livre.auteur);
+                    });
+                    
+                    ui.horizontal(|ui| {
+                        ui.label("ISBN: ");
+                        ui.text_edit_singleline(&mut self.nouveau_livre.isbn);
+                    });
+                    
+                    ui.horizontal(|ui| {
+                        ui.label("Année: ");
+                        ui.add(egui::DragValue::new(&mut self.nouveau_livre.annee_publication));
+                    });
+                    
+                    ui.add_space(10.0);
+                    if ui.button("Ajouter").clicked() {
+                        match self.bibliotheque.ajouter_livre(self.nouveau_livre.clone()) {
+                            Ok(_) => {
+                                self.message = "Livre ajouté avec succès.".to_string();
+                                self.message_type = MessageType::Succes;
+                                self.nouveau_livre = Livre {
+                                    titre: String::new(),
+                                    auteur: String::new(),
+                                    isbn: String::new(),
+                                    annee_publication: 0,
+                                };
+                            }
+                            Err(e) => {
+                                self.message = format!("Erreur: {}", e);
+                                self.message_type = MessageType::Erreur;
+                            }
+                        }
+                    }
+                }
+                Onglet::Recherche => {
+                    ui.heading("Rechercher un Livre");
+                    ui.add_space(10.0);
+                    
+                    ui.horizontal(|ui| {
+                        ui.label("Rechercher par titre: ");
+                        ui.text_edit_singleline(&mut self.recherche_titre);
+                    });
+                    
+                    if !self.recherche_titre.is_empty() {
+                        let resultats = self.bibliotheque.rechercher_par_titre(&self.recherche_titre);
+                        if resultats.is_empty() {
+                            ui.label("Aucun résultat trouvé.");
+                        } else {
+                            for livre in resultats {
+                                ui.vertical(|ui| {
+                                    ui.heading(&livre.titre);
+                                    ui.label(format!("Auteur: {}", livre.auteur));
+                                    ui.label(format!("ISBN: {}", livre.isbn));
+                                    ui.label(format!("Année: {}", livre.annee_publication));
+                                });
+                                ui.separator();
+                            }
+                        }
+                    }
+                    
+                    ui.add_space(10.0);
+                    
+                    ui.horizontal(|ui| {
+                        ui.label("Rechercher par ISBN: ");
+                        ui.text_edit_singleline(&mut self.recherche_isbn);
+                    });
+                    
+                    if !self.recherche_isbn.is_empty() {
+                        if let Some(livre) = self.bibliotheque.rechercher_par_isbn(&self.recherche_isbn) {
+                            ui.vertical(|ui| {
+                                ui.heading(&livre.titre);
+                                ui.label(format!("Auteur: {}", livre.auteur));
+                                ui.label(format!("ISBN: {}", livre.isbn));
+                                ui.label(format!("Année: {}", livre.annee_publication));
+                            });
+                        } else {
+                            ui.label("Aucun livre trouvé avec cet ISBN.");
+                        }
+                    }
+                }
+            }
+            
+            if !self.message.is_empty() {
+                ui.add_space(10.0);
+                match self.message_type {
+                    MessageType::Info => ui.label(&self.message),
+                    MessageType::Erreur => ui.colored_label(egui::Color32::RED, &self.message),
+                    MessageType::Succes => ui.colored_label(egui::Color32::GREEN, &self.message),
+                };
+            }
+        });
     }
+}
+
+fn main() -> Result<(), eframe::Error> {
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([800.0, 600.0]),
+        ..Default::default()
+    };
+    
+    eframe::run_native(
+        "Gestion de Bibliothèque",
+        options,
+        Box::new(|_cc| Box::new(BibliothequeApp::default())),
+    )
 }
