@@ -4,6 +4,7 @@ use std::path::Path;
 use serde::{Serialize, Deserialize};
 use std::error::Error;
 
+// Structure de base pour un livre
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Livre {
     titre: String,
@@ -12,23 +13,26 @@ struct Livre {
     annee_publication: u32,
 }
 
+// Gestion de la bibliothèque et de la persistance
 struct Bibliotheque {
     livres: Vec<Livre>,
     fichier: String,
 }
 
 impl Bibliotheque {
+    // Crée une nouvelle bibliothèque ou charge une existante
     fn new(fichier: &str) -> Self {
         let mut bibliotheque = Bibliotheque {
             livres: Vec::new(),
             fichier: fichier.to_string(),
         };
         bibliotheque.charger_donnees().unwrap_or_else(|_| {
-            println!("Création d'une nouvelle bibliothèque.");
+            println!("Nouvelle bibliothèque créée.");
         });
         bibliotheque
     }
 
+    // Charge les livres depuis le fichier JSON
     fn charger_donnees(&mut self) -> Result<(), Box<dyn Error>> {
         if !Path::new(&self.fichier).exists() {
             return Ok(());
@@ -43,18 +47,21 @@ impl Bibliotheque {
         Ok(())
     }
 
+    // Sauvegarde les livres dans le fichier JSON
     fn sauvegarder_donnees(&self) -> Result<(), Box<dyn Error>> {
         let contenu = serde_json::to_string_pretty(&self.livres)?;
         std::fs::write(&self.fichier, contenu)?;
         Ok(())
     }
 
+    // Ajoute un livre et sauvegarde
     fn ajouter_livre(&mut self, livre: Livre) -> Result<(), Box<dyn Error>> {
         self.livres.push(livre);
         self.sauvegarder_donnees()?;
         Ok(())
     }
 
+    // Recherche par titre (insensible à la casse)
     fn rechercher_par_titre(&self, titre: &str) -> Vec<&Livre> {
         self.livres
             .iter()
@@ -62,19 +69,21 @@ impl Bibliotheque {
             .collect()
     }
 
+    // Recherche par ISBN (recherche exacte)
     fn rechercher_par_isbn(&self, isbn: &str) -> Option<&Livre> {
         self.livres
             .iter()
             .find(|livre| livre.isbn.to_lowercase() == isbn.to_lowercase())
     }
 
+    // Affiche la liste des livres
     fn afficher_tous_les_livres(&self) {
         if self.livres.is_empty() {
             println!("La bibliothèque est vide.");
             return;
         }
 
-        println!("\nListe des livres dans la bibliothèque :");
+        println!("\nListe des livres :");
         for (index, livre) in self.livres.iter().enumerate() {
             println!("{}. {} - {} (ISBN: {}, Année: {})",
                 index + 1,
@@ -86,6 +95,7 @@ impl Bibliotheque {
         }
     }
 
+    // Supprime un livre par son index
     fn retirer_livre(&mut self, index: usize) -> Result<(), Box<dyn Error>> {
         if index >= self.livres.len() {
             return Err("Index invalide".into());
@@ -96,17 +106,18 @@ impl Bibliotheque {
     }
 }
 
+// Point d'entrée du programme
 fn main() {
     let mut bibliotheque = Bibliotheque::new("bibliotheque.json");
     
     loop {
-        println!("\n=== Menu de Gestion de la Bibliothèque ===");
+        println!("\n=== Menu Principal ===");
         println!("1. Ajouter un livre");
         println!("2. Rechercher un livre");
         println!("3. Afficher tous les livres");
         println!("4. Retirer un livre");
         println!("5. Quitter");
-        print!("\nVotre choix : ");
+        print!("\nChoix : ");
         io::stdout().flush().unwrap();
 
         let mut choix = String::new();
@@ -114,25 +125,25 @@ fn main() {
         let choix: u32 = match choix.trim().parse() {
             Ok(num) => num,
             Err(_) => {
-                println!("Veuillez entrer un nombre valide.");
+                println!("Entrée invalide.");
                 continue;
             }
         };
 
         match choix {
             1 => {
-                println!("\nAjout d'un nouveau livre :");
+                println!("\nNouveau livre :");
                 let livre = saisir_livre();
                 match bibliotheque.ajouter_livre(livre) {
-                    Ok(_) => println!("Livre ajouté avec succès !"),
-                    Err(e) => println!("Erreur lors de l'ajout du livre : {}", e),
+                    Ok(_) => println!("Livre ajouté !"),
+                    Err(e) => println!("Erreur : {}", e),
                 }
             }
             2 => {
-                println!("\nRecherche de livre");
-                println!("1. Rechercher par titre");
-                println!("2. Rechercher par ISBN");
-                print!("Votre choix : ");
+                println!("\nRecherche :");
+                println!("1. Par titre");
+                println!("2. Par ISBN");
+                print!("Choix : ");
                 io::stdout().flush().unwrap();
                 
                 let mut type_recherche = String::new();
@@ -140,16 +151,16 @@ fn main() {
                 
                 match type_recherche.trim().parse::<u32>() {
                     Ok(1) => {
-                        print!("Entrez le titre à rechercher : ");
+                        print!("Titre : ");
                         io::stdout().flush().unwrap();
                         let mut titre = String::new();
                         io::stdin().read_line(&mut titre).unwrap();
                         let resultats = bibliotheque.rechercher_par_titre(titre.trim());
                         
                         if resultats.is_empty() {
-                            println!("Aucun livre trouvé.");
+                            println!("Aucun résultat.");
                         } else {
-                            println!("\nRésultats de la recherche :");
+                            println!("\nRésultats :");
                             for livre in resultats {
                                 println!("- {} - {} (ISBN: {}, Année: {})",
                                     livre.titre,
@@ -161,7 +172,7 @@ fn main() {
                         }
                     },
                     Ok(2) => {
-                        print!("Entrez l'ISBN à rechercher : ");
+                        print!("ISBN : ");
                         io::stdout().flush().unwrap();
                         let mut isbn = String::new();
                         io::stdin().read_line(&mut isbn).unwrap();
@@ -176,10 +187,10 @@ fn main() {
                                     livre.annee_publication
                                 );
                             },
-                            None => println!("Aucun livre trouvé avec cet ISBN."),
+                            None => println!("ISBN non trouvé."),
                         }
                     },
-                    _ => println!("Option de recherche invalide."),
+                    _ => println!("Option invalide."),
                 }
             }
             3 => {
@@ -188,7 +199,7 @@ fn main() {
             4 => {
                 bibliotheque.afficher_tous_les_livres();
                 if !bibliotheque.livres.is_empty() {
-                    print!("\nEntrez le numéro du livre à retirer : ");
+                    print!("\nNuméro du livre à retirer : ");
                     io::stdout().flush().unwrap();
                     let mut index = String::new();
                     io::stdin().read_line(&mut index).unwrap();
@@ -201,7 +212,7 @@ fn main() {
                     };
 
                     match bibliotheque.retirer_livre(index) {
-                        Ok(_) => println!("Livre retiré avec succès !"),
+                        Ok(_) => println!("Livre retiré !"),
                         Err(e) => println!("Erreur : {}", e),
                     }
                 }
@@ -210,11 +221,12 @@ fn main() {
                 println!("Au revoir !");
                 break;
             }
-            _ => println!("Choix invalide. Veuillez réessayer."),
+            _ => println!("Option invalide."),
         }
     }
 }
 
+// Saisie des informations d'un livre
 fn saisir_livre() -> Livre {
     print!("Titre : ");
     io::stdout().flush().unwrap();
@@ -231,7 +243,7 @@ fn saisir_livre() -> Livre {
     let mut isbn = String::new();
     io::stdin().read_line(&mut isbn).unwrap();
 
-    print!("Année de publication : ");
+    print!("Année : ");
     io::stdout().flush().unwrap();
     let mut annee = String::new();
     io::stdin().read_line(&mut annee).unwrap();
