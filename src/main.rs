@@ -85,7 +85,7 @@ impl Bibliotheque {
 
         println!("\nListe des livres :");
         for (index, livre) in self.livres.iter().enumerate() {
-            println!("{}. {} - {} (ISBN: {}, Année: {})",
+            println!("{}. {} de {} (ISBN: {}, Année: {})",
                 index + 1,
                 livre.titre,
                 livre.auteur,
@@ -162,7 +162,7 @@ fn main() {
                         } else {
                             println!("\nRésultats :");
                             for livre in resultats {
-                                println!("- {} - {} (ISBN: {}, Année: {})",
+                                println!("- {} de {} (ISBN: {}, Année: {})",
                                     livre.titre,
                                     livre.auteur,
                                     livre.isbn,
