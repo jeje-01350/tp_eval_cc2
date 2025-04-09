@@ -1,0 +1,10 @@
+- creer un programme qui gere une bibliotheque de livres
+- chaque livre possede un titre, un auteur, un numero ISBN, une année de publication
+- le programme doit permettre d’executer les actions suivante :
+    - ajouter un livre a la bibliotheque
+    - rechercher un livre par titre
+    - afficher tout les livres dans la bibliotheque
+    - retirer un livre de la bibliothèque
+- Consigne :
+    - Utiliser des notions acquise (tableau ou vecteur, manipulation des fichiers, boucle, conditions …)
+- Bonus : utilisez un systeme de menu pour acceder a chaque action
