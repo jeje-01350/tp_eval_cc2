@@ -1,8 +1,62 @@
 [
   {
-    "titre": "test",
-    "auteur": "test",
-    "isbn": "123456789",
-    "annee_publication": 2020
+    "titre": "Le Petit Prince",
+    "auteur": "Antoine de Saint-Exupéry",
+    "isbn": "9782070407586",
+    "annee_publication": 1943
+  },
+  {
+    "titre": "1984",
+    "auteur": "George Orwell",
+    "isbn": "9782070368228",
+    "annee_publication": 1949
+  },
+  {
+    "titre": "Le Seigneur des Anneaux",
+    "auteur": "J.R.R. Tolkien",
+    "isbn": "9782266282361",
+    "annee_publication": 1954
+  },
+  {
+    "titre": "Harry Potter à l'école des sorciers",
+    "auteur": "J.K. Rowling",
+    "isbn": "9782070518425",
+    "annee_publication": 1997
+  },
+  {
+    "titre": "Le Comte de Monte-Cristo",
+    "auteur": "Alexandre Dumas",
+    "isbn": "9782253005374",
+    "annee_publication": 1844
+  },
+  {
+    "titre": "Les Misérables",
+    "auteur": "Victor Hugo",
+    "isbn": "9782253005367",
+    "annee_publication": 1862
+  },
+  {
+    "titre": "L'Étranger",
+    "auteur": "Albert Camus",
+    "isbn": "9782070360024",
+    "annee_publication": 1942
+  },
+  {
+    "titre": "Vingt mille lieues sous les mers",
+    "auteur": "Jules Verne",
+    "isbn": "9782253005381",
+    "annee_publication": 1870
+  },
+  {
+    "titre": "Le Rouge et le Noir",
+    "auteur": "Stendhal",
+    "isbn": "9782253005398",
+    "annee_publication": 1830
+  },
+  {
+    "titre": "Les Trois Mousquetaires",
+    "auteur": "Alexandre Dumas",
+    "isbn": "9782253005404",
+    "annee_publication": 1844
   }
 ]
