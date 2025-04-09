@@ -13,6 +13,17 @@ struct Livre {
     annee_publication: u32,
 }
 
+impl Livre {
+    // Valide l'année de publication
+    fn valider_annee(annee: u32) -> Result<u32, String> {
+        if annee == 0 {
+            Err("L'année de publication doit être positive".to_string())
+        } else {
+            Ok(annee)
+        }
+    }
+}
+
 // Gestion de la bibliothèque et de la persistance
 struct Bibliotheque {
     livres: Vec<Livre>,
@@ -243,11 +254,20 @@ fn saisir_livre() -> Livre {
     let mut isbn = String::new();
     io::stdin().read_line(&mut isbn).unwrap();
 
-    print!("Année : ");
-    io::stdout().flush().unwrap();
-    let mut annee = String::new();
-    io::stdin().read_line(&mut annee).unwrap();
-    let annee: u32 = annee.trim().parse().unwrap_or(0);
+    let annee = loop {
+        print!("Année : ");
+        io::stdout().flush().unwrap();
+        let mut annee = String::new();
+        io::stdin().read_line(&mut annee).unwrap();
+        
+        match annee.trim().parse::<u32>() {
+            Ok(annee) => match Livre::valider_annee(annee) {
+                Ok(annee) => break annee,
+                Err(e) => println!("Erreur : {}", e),
+            },
+            Err(_) => println!("Veuillez entrer un nombre valide."),
+        }
+    };
 
     Livre {
         titre: titre.trim().to_string(),
